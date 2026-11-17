@@ -1,11 +1,11 @@
 (
     name: "Project Opener",
-    description: "Open a project from ~/projects in PhpStorm\nSyntax: proj <filter>",
+    description: "Open a project from ~/projects\nproj <filter>: PhpStorm, projc <filter>: Claude (Remote Control)",
     bin: (path: "proj.py"),
     icon: Name("phpstorm"),
     query: (
-        regex: "^proj\\b.*",
-        help: "proj ",
+        regex: "^projc?\\b.*",
+        help: "proj / projc ",
         priority: High,
     ),
     history: false,

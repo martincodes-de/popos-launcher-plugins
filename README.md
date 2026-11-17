@@ -5,7 +5,7 @@ Small [pop-launcher](https://github.com/pop-os/launcher) plugins for Pop!_OS (Su
 | Plugin | Trigger | What it does |
 |---|---|---|
 | [audio-switch](audio-switch/) | `audio`, `out`, `mic` | Switch audio output and microphone |
-| [proj](proj/) | `proj` | Open a folder from `~/projects` in PhpStorm |
+| [proj](proj/) | `proj`, `projc` | Open a folder from `~/projects` in PhpStorm, or in a terminal with Claude Code Remote Control |
 
 ## Screenshots
 
