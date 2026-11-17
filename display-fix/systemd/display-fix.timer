@@ -1,0 +1,16 @@
+[Unit]
+Description=Run display-fix after login (10 s, 2 min, 10 min)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Timer]
+# relative to the moment the timer is activated, i.e. when the graphical session starts.
+# Several entries fire independently: first run quickly, later ones catch docks/adapters
+# that are detected late.
+OnActiveSec=10s
+OnActiveSec=2min
+OnActiveSec=10min
+AccuracySec=1s
+
+[Install]
+WantedBy=graphical-session.target

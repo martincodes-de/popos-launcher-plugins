@@ -1,0 +1,11 @@
+[Unit]
+Description=Activate inactive monitors and keep the laptop screen leftmost
+# only meaningful inside a graphical session (needs DISPLAY / XAUTHORITY)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=@REPO@/display-fix/display-fix.sh
+# the script waits for Enter only on a terminal; here stdin is /dev/null
+StandardInput=null

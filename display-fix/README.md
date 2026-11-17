@@ -14,6 +14,17 @@ Further entries appear when an external monitor is connected: **Laptop screen on
 
 Logs go to `~/.local/state/display-fix/` (newest 20 are kept). `display-fix.sh` also works standalone in a terminal.
 
+## Run automatically after login
+
+```sh
+display-fix/install-autostart.sh            # enable
+display-fix/install-autostart.sh --remove   # disable
+```
+
+Installs a systemd user timer that runs the fix 10 seconds, 2 minutes and 10 minutes after the graphical
+session starts. The later runs catch docks and adapters that are detected late. Check with
+`systemctl --user list-timers display-fix.timer`.
+
 ## Requirements
 
 `xrandr` (X11 session only, not Wayland) and `gdbus` for the notification.
