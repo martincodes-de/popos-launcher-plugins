@@ -7,7 +7,7 @@ really warm (GNOME's `NightLightActive`), otherwise only *Turn on/off* and one m
 
 - **Turn Night Light on/off** (the entry shows the current state, schedule and temperature)
 - **Warm now** switches to a manual schedule that starts immediately and ends at the configured end time (default 6:00), so you see the effect during the day
-- **Very warm / Warm** sets the colour temperature (1700 / 2700 K) and switches Night Light on
+- **Low / Medium / High** set the warmth (3200 / 2400 / 1700 K) and switch Night Light on
 - **Use sunset to sunrise** appears after *Warm now* (or any custom schedule) and switches back to the automatic schedule
 
 Note: with the automatic schedule the screen only turns warm after sunset, so toggling during the day

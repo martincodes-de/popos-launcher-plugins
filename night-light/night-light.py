@@ -11,8 +11,9 @@ import sys
 import time
 
 SCHEMA = "org.gnome.settings-daemon.plugins.color"
-# (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K.
-PRESETS = [("Very warm", 1700), ("Warm", 2700)]
+# (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K. 3700 K was tried as a
+# "mild" step and felt like nothing, so "Low" starts at 3200 K.
+PRESETS = [("Low", 3200), ("Medium", 2400), ("High", 1700)]
 
 
 def send(msg):
@@ -87,7 +88,7 @@ def entries():
     for label, k in (PRESETS if active() else []):
         mark = " · current" if k == kelvin else ""
         # choosing a warmth also switches the feature on, otherwise nothing would change
-        presets.append((f"{label} ({k} K)", "Set colour temperature" + mark,
+        presets.append((label, f"Warmth {k} K" + mark,
                       [("night-light-temperature", k), ("night-light-enabled", True)]))
     back = ("Use sunset to sunrise", "Switch back to the automatic schedule",
             [("night-light-schedule-automatic", True)])
