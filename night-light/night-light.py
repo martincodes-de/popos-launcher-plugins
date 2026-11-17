@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""pop-launcher plugin: toggle GNOME Night Light and choose its colour temperature.
+"""pop-launcher plugin: switch the screen warm / back to normal (GNOME Night Light).
+
+The default is GNOME's sunset-to-sunrise schedule. "Warm on" is only a temporary override that
+a transient systemd timer undoes at the configured end time; "Warm off" returns to the default.
+While the screen is warm, three warmth steps are offered.
 
 Protocol: pop-launcher sends one JSON request per line on stdin and expects
 JSON responses, one per line, on stdout.
@@ -36,6 +40,62 @@ def put(key, value):
     subprocess.run(cmd, check=True)
 
 
+COLOR_DBUS = ["--session", "--dest", "org.gnome.SettingsDaemon.Color",
+              "--object-path", "/org/gnome/SettingsDaemon/Color"]
+RESTORE_UNIT = "night-light-restore"
+
+
+def run(cmd):
+    # NIGHT_DRY_RUN=1 prints instead of changing the screen (used for testing)
+    if os.environ.get("NIGHT_DRY_RUN"):
+        print(" ".join(cmd), file=sys.stderr)
+        return
+    subprocess.run(cmd, capture_output=True)
+
+
+def cancel_restore():
+    run(["systemctl", "--user", "stop", f"{RESTORE_UNIT}.timer"])
+
+
+def schedule_restore(end_hours):
+    """One-shot transient timer: back to the sunset schedule at the end of the override.
+    (A manual schedule would otherwise repeat every day from the time of the override.)
+    If the session ends before that, the schedule stays manual until "Warm off"."""
+    cancel_restore()
+    now = time.time()
+    t = time.localtime(now)
+    end = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, int(end_hours),
+                       round((end_hours % 1) * 60), 0, 0, 0, -1))
+    if end <= now:
+        end += 86400   # the end time already passed today, so it means tomorrow
+    when = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end))
+    run(["systemd-run", "--user", f"--unit={RESTORE_UNIT}", "--collect", f"--on-calendar={when}",
+         "gsettings", "set", SCHEMA, "night-light-schedule-automatic", "true"])
+
+
+def off_tonight():
+    """After returning to the default it may still be night: then GNOME warms the screen
+    again at once, so also use its own "disabled until tomorrow" switch."""
+    if not os.environ.get("NIGHT_DRY_RUN"):
+        time.sleep(0.6)             # give the settings daemon a moment to apply the change
+        if not active():
+            return
+    run(["gdbus", "call", *COLOR_DBUS, "--method", "org.freedesktop.DBus.Properties.Set",
+         "org.gnome.SettingsDaemon.Color", "DisabledUntilTomorrow", "<true>"])
+
+
+def apply(actions):
+    for a in actions:
+        if a[0] == "restore":
+            schedule_restore(a[1])
+        elif a[0] == "cancel":
+            cancel_restore()
+        elif a[0] == "off_tonight":
+            off_tonight()
+        else:
+            put(*a)
+
+
 def active():
     """True while the screen is really tinted. "Enabled" only means the feature is on: with a
     sunset schedule it is enabled all day but warm only at night. GNOME exposes the real
@@ -52,13 +112,6 @@ def active():
         return get("night-light-enabled") == "true"
 
 
-def state():
-    enabled = get("night-light-enabled") == "true"
-    auto = get("night-light-schedule-automatic") == "true"
-    kelvin = int(get("night-light-temperature").split()[-1])   # "uint32 2211" -> 2211
-    return enabled, auto, kelvin
-
-
 def hhmm(hours):
     """GNOME stores times as float hours: 6.5 -> '6:30'."""
     h = int(hours); m = round((hours - h) * 60)
@@ -66,51 +119,33 @@ def hhmm(hours):
 
 
 def entries():
-    """[(label, description, action)], action is a list of (key, value) to set."""
-    enabled, auto, kelvin = state()
-    schedule = "sunset to sunrise" if auto else "custom schedule"
-    toggle = ("Turn Night Light off" if enabled else "Turn Night Light on",
-              f"Currently {'on' if enabled else 'off'}, {schedule}, {kelvin} K",
-              [("night-light-enabled", not enabled)])
-    # "warm now": sunset-based schedules do nothing during the day, so switch to a manual
-    # schedule that starts one minute ago and ends at the configured end time (usually
-    # the next morning). A start later than the end is read by GNOME as "overnight".
+    """[(label, description, actions)]; actions are (key, value) pairs or special tuples."""
+    kelvin = int(get("night-light-temperature").split()[-1])   # "uint32 2211" -> 2211
+    if active():
+        # back to the default (sunset schedule); if it is night right now, also skip tonight
+        items = [("Warm off", f"Back to normal colours (now {kelvin} K)",
+                  [("cancel",), ("night-light-schedule-automatic", True),
+                   ("night-light-enabled", True), ("off_tonight",)])]
+        for label, k in PRESETS:
+            mark = " \u00b7 current" if k == kelvin else ""
+            # the step only sets the warmth: the screen is already warm, nothing else changes
+            items.append((label, f"Warmth {k} K" + mark, [("night-light-temperature", k)]))
+        return items
+    # Not warm right now. The sunset schedule would do nothing during the day, so override it
+    # with a manual schedule that started one minute ago and ends at the configured end time.
+    # A start later than the end is read by GNOME as "overnight".
     now = time.localtime()
     start = max(0.0, round(now.tm_hour + now.tm_min / 60 - 1 / 60, 2))
     end = float(get("night-light-schedule-to"))
-    warm_now = ("Warm now", f"Until {hhmm(end)}, replaces the sunset schedule",
-                [("night-light-schedule-automatic", False),
-                 ("night-light-schedule-from", start),
-                 ("night-light-enabled", True)])
-    # the first entries are what is shown without a filter, the rest only when you type
-    items = [toggle, warm_now]
-    presets = []
-    for label, k in (PRESETS if active() else []):
-        mark = " · current" if k == kelvin else ""
-        # choosing a warmth also switches the feature on, otherwise nothing would change
-        presets.append((label, f"Warmth {k} K" + mark,
-                      [("night-light-temperature", k), ("night-light-enabled", True)]))
-    back = ("Use sunset to sunrise", "Switch back to the automatic schedule",
-            [("night-light-schedule-automatic", True)])
-    # after "Warm now" the way back is more useful than offering "Warm now" again
-    if not auto:
-        # order matters: the first entries (see default_count) are what you see without a filter
-        return [toggle, back] + presets + [warm_now]
-    return items + presets
-
-
-def default_count():
-    """Entries shown without a filter: toggle + one more, plus the warmth presets when the
-    screen is really warm (they change nothing visible otherwise, so they are not offered)."""
-    return 2 + (len(PRESETS) if active() else 0)
+    return [("Warm on", f"Warm now until {hhmm(end)}, then back to sunset schedule",
+             [("night-light-schedule-automatic", False), ("night-light-schedule-from", start),
+              ("night-light-enabled", True), ("restore", end)])]
 
 
 def search(query):
     parts = query.split(maxsplit=1)
     needle = parts[1].lower() if len(parts) > 1 else ""
-    items = entries()
-    # with a filter search everything (e.g. "night warm" also finds presets while it is off)
-    shown = [e for e in items if needle in e[0].lower()] if needle else items[:default_count()]
+    shown = [e for e in entries() if needle in e[0].lower()]
     for i, (label, desc, _) in enumerate(shown):
         send({"Append": {"id": i, "name": label, "description": desc,
                          "icon": {"Name": "night-light-symbolic"}}})
@@ -128,9 +163,8 @@ def main():
             if isinstance(req, dict) and "Search" in req:
                 shown = search(req["Search"])
             elif isinstance(req, dict) and "Activate" in req:
-                for key, value in shown[req["Activate"]][2]:
-                    put(key, value)
-                send("Close")
+                send("Close")   # close the launcher first, the change can take a moment
+                apply(shown[req["Activate"]][2])
         except Exception:
             send("Finished")
 

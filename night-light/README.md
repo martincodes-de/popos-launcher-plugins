@@ -1,18 +1,21 @@
 # night-light
 
-A [pop-launcher](https://github.com/pop-os/launcher) plugin to toggle GNOME Night Light and set its warmth.
+A [pop-launcher](https://github.com/pop-os/launcher) plugin to make the screen warm and back to normal
+(GNOME Night Light).
 
-Press **Super**, type `night`, pick an entry, hit **Enter**. The list stays short: the warmth presets are only offered while the screen is
-really warm (GNOME's `NightLightActive`), otherwise only *Turn on/off* and one more entry are shown:
+The default is GNOME's **sunset-to-sunrise schedule**. This plugin only adds a temporary override.
 
-- **Turn Night Light on/off** (the entry shows the current state, schedule and temperature)
-- **Warm now** switches to a manual schedule that starts immediately and ends at the configured end time (default 6:00), so you see the effect during the day
-- **Low / Medium / High** set the warmth (3200 / 2700 / 2200 K) and switch Night Light on
-- **Use sunset to sunrise** appears after *Warm now* (or any custom schedule) and switches back to the automatic schedule
+Press **Super**, type `night`, hit **Enter**:
 
-Note: with the automatic schedule the screen only turns warm after sunset, so toggling during the day
-has no visible effect until then. Use *Warm now* for an immediate effect.
+- **Warm on** (shown while the screen is normal): warm right now until the configured end time
+  (default 6:00). A one-shot systemd timer then restores the sunset schedule.
+- **Warm off** (shown while the screen is warm): back to normal colours and the sunset schedule.
+  If it is night, it only skips tonight (GNOME's "disabled until tomorrow").
+- **Low / Medium / High** (shown while the screen is warm): warmth 3200 / 2700 / 2200 K.
+
+"Warm" means GNOME's real state (`NightLightActive`), not just the on/off setting.
 
 ## Requirements
 
-GNOME with `gsettings` (schema `org.gnome.settings-daemon.plugins.color`). Not available on COSMIC.
+GNOME with `gsettings`, `gdbus` and `systemd --user`. Not available on COSMIC.
+If the session ends before the restore timer fires, the schedule stays manual until you pick **Warm off**.
