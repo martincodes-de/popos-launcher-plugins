@@ -6,6 +6,7 @@ Small [pop-launcher](https://github.com/pop-os/launcher) plugins for Pop!_OS (Su
 |---|---|---|
 | [audio-switch](audio-switch/) | `audio`, `out`, `mic` | Switch audio output and microphone |
 | [display-fix](display-fix/) | `display`, `monitor` | Fix inactive monitors and switch layouts: laptop only, external only, extend, mirror (xrandr) |
+| [night-light](night-light/) | `night` | Toggle Night Light and set its warmth |
 | [proj](proj/) | `proj`, `projc` | Open a folder from `~/projects` in PhpStorm, or in a terminal with Claude Code Remote Control |
 
 ## Screenshots

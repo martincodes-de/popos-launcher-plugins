@@ -1,0 +1,12 @@
+(
+    name: "Night Light",
+    description: "Toggle GNOME Night Light and set its warmth\nSyntax: night, nightlight",
+    bin: (path: "night-light.py"),
+    icon: Name("night-light-symbolic"),
+    query: (
+        regex: "^(night|nightlight)\\b.*",
+        help: "night ",
+        priority: High,
+    ),
+    history: false,
+)

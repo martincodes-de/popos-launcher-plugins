@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""pop-launcher plugin: toggle GNOME Night Light and choose its colour temperature.
+
+Protocol: pop-launcher sends one JSON request per line on stdin and expects
+JSON responses, one per line, on stdout.
+"""
+import json
+import os
+import subprocess
+import sys
+
+SCHEMA = "org.gnome.settings-daemon.plugins.color"
+# (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K.
+PRESETS = [("Very warm", 1700), ("Warm", 2700), ("Mild", 3700)]
+
+
+def send(msg):
+    # flush every line, otherwise the launcher never sees the answer
+    sys.stdout.write(json.dumps(msg) + "\n")
+    sys.stdout.flush()
+
+
+def get(key):
+    return subprocess.run(["gsettings", "get", SCHEMA, key],
+                          capture_output=True, text=True, check=True).stdout.strip()
+
+
+def put(key, value):
+    # NIGHT_DRY_RUN=1 prints instead of changing the screen (used for testing)
+    cmd = ["gsettings", "set", SCHEMA, key, str(value).lower() if isinstance(value, bool) else str(value)]
+    if os.environ.get("NIGHT_DRY_RUN"):
+        print(" ".join(cmd), file=sys.stderr)
+        return
+    subprocess.run(cmd, check=True)
+
+
+def state():
+    enabled = get("night-light-enabled") == "true"
+    auto = get("night-light-schedule-automatic") == "true"
+    kelvin = int(get("night-light-temperature").split()[-1])   # "uint32 2211" -> 2211
+    return enabled, auto, kelvin
+
+
+def entries():
+    """[(label, description, action)], action is a list of (key, value) to set."""
+    enabled, auto, kelvin = state()
+    schedule = "sunset to sunrise" if auto else "custom schedule"
+    toggle = ("Turn Night Light off" if enabled else "Turn Night Light on",
+              f"Currently {'on' if enabled else 'off'}, {schedule}, {kelvin} K",
+              [("night-light-enabled", not enabled)])
+    items = [toggle]
+    for label, k in PRESETS:
+        mark = " · current" if k == kelvin else ""
+        # choosing a warmth also switches the feature on, otherwise nothing would change
+        items.append((f"{label} ({k} K)", "Set colour temperature" + mark,
+                      [("night-light-temperature", k), ("night-light-enabled", True)]))
+    if not auto:
+        items.append(("Use sunset to sunrise", "Switch back to the automatic schedule",
+                      [("night-light-schedule-automatic", True)]))
+    return items
+
+
+def search(query):
+    parts = query.split(maxsplit=1)
+    needle = parts[1].lower() if len(parts) > 1 else ""
+    shown = [e for e in entries() if needle in e[0].lower()]
+    for i, (label, desc, _) in enumerate(shown):
+        send({"Append": {"id": i, "name": label, "description": desc,
+                         "icon": {"Name": "night-light-symbolic"}}})
+    send("Finished")
+    return shown
+
+
+def main():
+    shown = []  # Activate(id) is an index into the list of the last search
+    for line in sys.stdin:
+        try:
+            req = json.loads(line)
+            if req == "Exit":
+                break
+            if isinstance(req, dict) and "Search" in req:
+                shown = search(req["Search"])
+            elif isinstance(req, dict) and "Activate" in req:
+                for key, value in shown[req["Activate"]][2]:
+                    put(key, value)
+                send("Close")
+        except Exception:
+            send("Finished")
+
+
+if __name__ == "__main__":
+    main()
