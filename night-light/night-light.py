@@ -11,9 +11,9 @@ import sys
 import time
 
 SCHEMA = "org.gnome.settings-daemon.plugins.color"
-# (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K. 3700 K was tried as a
-# "mild" step and felt like nothing, so "Low" starts at 3200 K.
-PRESETS = [("Low", 3200), ("Medium", 2400), ("High", 1700)]
+# (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K. 3700 K felt like
+# nothing and 1700 K is too extreme, so the steps cover 3200-2200 K.
+PRESETS = [("Low", 3200), ("Medium", 2700), ("High", 2200)]
 
 
 def send(msg):
