@@ -12,7 +12,7 @@ import time
 
 SCHEMA = "org.gnome.settings-daemon.plugins.color"
 # (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K.
-PRESETS = [("Very warm", 1700), ("Warm", 2700), ("Mild", 3700)]
+PRESETS = [("Very warm", 1700), ("Warm", 2700)]
 
 
 def send(msg):
@@ -65,22 +65,36 @@ def entries():
                 [("night-light-schedule-automatic", False),
                  ("night-light-schedule-from", start),
                  ("night-light-enabled", True)])
+    # the first entries are what is shown without a filter, the rest only when you type
     items = [toggle, warm_now]
+    presets = []
     for label, k in PRESETS:
         mark = " · current" if k == kelvin else ""
         # choosing a warmth also switches the feature on, otherwise nothing would change
-        items.append((f"{label} ({k} K)", "Set colour temperature" + mark,
+        presets.append((f"{label} ({k} K)", "Set colour temperature" + mark,
                       [("night-light-temperature", k), ("night-light-enabled", True)]))
+    back = ("Use sunset to sunrise", "Switch back to the automatic schedule",
+            [("night-light-schedule-automatic", True)])
+    # after "Warm now" the way back is more useful than offering "Warm now" again
     if not auto:
-        items.append(("Use sunset to sunrise", "Switch back to the automatic schedule",
-                      [("night-light-schedule-automatic", True)]))
-    return items
+        # order matters: the first entries (see default_count) are what you see without a filter
+        return [toggle, back] + presets + [warm_now]
+    return items + presets
+
+
+def default_count():
+    """How many entries to show without a filter: toggle + one more, and the warmth presets
+    only while Night Light is on (they change nothing visible while it is off)."""
+    enabled, _, _ = state()
+    return 2 + (len(PRESETS) if enabled else 0)
 
 
 def search(query):
     parts = query.split(maxsplit=1)
     needle = parts[1].lower() if len(parts) > 1 else ""
-    shown = [e for e in entries() if needle in e[0].lower()]
+    items = entries()
+    # with a filter search everything (e.g. "night warm" also finds presets while it is off)
+    shown = [e for e in items if needle in e[0].lower()] if needle else items[:default_count()]
     for i, (label, desc, _) in enumerate(shown):
         send({"Append": {"id": i, "name": label, "description": desc,
                          "icon": {"Name": "night-light-symbolic"}}})
