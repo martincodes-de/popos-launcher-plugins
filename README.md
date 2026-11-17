@@ -7,6 +7,16 @@ Small [pop-launcher](https://github.com/pop-os/launcher) plugins for Pop!_OS (Su
 | [audio-switch](audio-switch/) | `audio`, `out`, `mic` | Switch audio output and microphone |
 | [proj](proj/) | `proj` | Open a folder from `~/projects` in PhpStorm |
 
+## Screenshots
+
+**`audio`** lists outputs and microphones together, the active device is marked:
+
+![audio plugin](docs/audio.png)
+
+**`proj`** shows the most recently used projects, typing a filter searches all folders:
+
+![proj plugin](docs/proj.png)
+
 ## Install
 
 ```sh
