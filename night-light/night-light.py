@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 SCHEMA = "org.gnome.settings-daemon.plugins.color"
 # (label, kelvin): lower = warmer. GNOME allows roughly 1700-4700 K.
@@ -41,6 +42,12 @@ def state():
     return enabled, auto, kelvin
 
 
+def hhmm(hours):
+    """GNOME stores times as float hours: 6.5 -> '6:30'."""
+    h = int(hours); m = round((hours - h) * 60)
+    return f"{h}:{m:02d}"
+
+
 def entries():
     """[(label, description, action)], action is a list of (key, value) to set."""
     enabled, auto, kelvin = state()
@@ -48,7 +55,17 @@ def entries():
     toggle = ("Turn Night Light off" if enabled else "Turn Night Light on",
               f"Currently {'on' if enabled else 'off'}, {schedule}, {kelvin} K",
               [("night-light-enabled", not enabled)])
-    items = [toggle]
+    # "warm now": sunset-based schedules do nothing during the day, so switch to a manual
+    # schedule that starts one minute ago and ends at the configured end time (usually
+    # the next morning). A start later than the end is read by GNOME as "overnight".
+    now = time.localtime()
+    start = max(0.0, round(now.tm_hour + now.tm_min / 60 - 1 / 60, 2))
+    end = float(get("night-light-schedule-to"))
+    warm_now = ("Warm now", f"Until {hhmm(end)}, replaces the sunset schedule",
+                [("night-light-schedule-automatic", False),
+                 ("night-light-schedule-from", start),
+                 ("night-light-enabled", True)])
+    items = [toggle, warm_now]
     for label, k in PRESETS:
         mark = " · current" if k == kelvin else ""
         # choosing a warmth also switches the feature on, otherwise nothing would change
