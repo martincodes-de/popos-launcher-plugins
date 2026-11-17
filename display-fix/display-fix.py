@@ -98,7 +98,7 @@ def notify(title, body):
 def entries():
     ports = inactive_ports()
     fix = ("Fix displays",
-           ("Inactive: " + ", ".join(ports)) if ports else "All connected displays are active",
+           ("Inactive: " + ", ".join(ports)) if ports else "All active, laptop screen is kept leftmost",
            None)  # None = run display-fix.sh
     # an inactive monitor is the likely reason for opening this, so put the fix first
     return [fix, *presets()]
@@ -125,7 +125,7 @@ def activate(entry):
     subprocess.run([SCRIPT], stdin=subprocess.DEVNULL, capture_output=True)
     after = inactive_ports()
     if not before:
-        notify("Display Fix", "Nothing to do: all connected displays are active.")
+        notify("Display Fix", "All displays active, order checked (laptop screen leftmost).")
     elif after:
         notify("Display Fix", "Still inactive: " + ", ".join(after) + ". See ~/.local/state/display-fix/")
     else:

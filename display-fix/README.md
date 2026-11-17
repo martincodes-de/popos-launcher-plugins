@@ -4,6 +4,7 @@ A [pop-launcher](https://github.com/pop-os/launcher) plugin that activates monit
 connected but inactive (X11 / `xrandr`), e.g. after unplugging and re-plugging a dock or HDMI cable.
 
 Press **Super**, type `display` (or `monitor`), hit **Enter**. The entry shows which outputs are inactive.
+The built-in laptop screen (`eDP`/`LVDS`) is always moved to the leftmost position afterwards; the order of other screens and vertical offsets stay as they are.
 New displays are placed to the right of the active ones using their preferred resolution; if that fails, all
 outputs are reconfigured in one `xrandr` call as a workaround for pipeline conflicts. A notification shows the result.
 
