@@ -7,6 +7,10 @@ Press **Super**, type `display` (or `monitor`), hit **Enter**. The entry shows w
 New displays are placed to the right of the active ones using their preferred resolution; if that fails, all
 outputs are reconfigured in one `xrandr` call as a workaround for pipeline conflicts. A notification shows the result.
 
+Further entries appear when an external monitor is connected: **Laptop screen only**, **External monitor only**,
+**Extend to the right** and **Mirror displays** (at the largest resolution both screens support).
+`display mirror` filters the list.
+
 Logs go to `~/.local/state/display-fix/` (newest 20 are kept). `display-fix.sh` also works standalone in a terminal.
 
 ## Requirements

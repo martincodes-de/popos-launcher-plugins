@@ -5,7 +5,7 @@ Small [pop-launcher](https://github.com/pop-os/launcher) plugins for Pop!_OS (Su
 | Plugin | Trigger | What it does |
 |---|---|---|
 | [audio-switch](audio-switch/) | `audio`, `out`, `mic` | Switch audio output and microphone |
-| [display-fix](display-fix/) | `display`, `monitor` | Activate connected but inactive monitors (xrandr) |
+| [display-fix](display-fix/) | `display`, `monitor` | Fix inactive monitors and switch layouts: laptop only, external only, extend, mirror (xrandr) |
 | [proj](proj/) | `proj`, `projc` | Open a folder from `~/projects` in PhpStorm, or in a terminal with Claude Code Remote Control |
 
 ## Screenshots
