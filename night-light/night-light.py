@@ -35,6 +35,22 @@ def put(key, value):
     subprocess.run(cmd, check=True)
 
 
+def active():
+    """True while the screen is really tinted. "Enabled" only means the feature is on: with a
+    sunset schedule it is enabled all day but warm only at night. GNOME exposes the real
+    state on D-Bus; if that fails we fall back to "enabled"."""
+    try:
+        out = subprocess.run(
+            ["gdbus", "call", "--session", "--dest", "org.gnome.SettingsDaemon.Color",
+             "--object-path", "/org/gnome/SettingsDaemon/Color",
+             "--method", "org.freedesktop.DBus.Properties.Get",
+             "org.gnome.SettingsDaemon.Color", "NightLightActive"],
+            capture_output=True, text=True, check=True).stdout
+        return "true" in out
+    except Exception:
+        return get("night-light-enabled") == "true"
+
+
 def state():
     enabled = get("night-light-enabled") == "true"
     auto = get("night-light-schedule-automatic") == "true"
@@ -68,7 +84,7 @@ def entries():
     # the first entries are what is shown without a filter, the rest only when you type
     items = [toggle, warm_now]
     presets = []
-    for label, k in PRESETS:
+    for label, k in (PRESETS if active() else []):
         mark = " · current" if k == kelvin else ""
         # choosing a warmth also switches the feature on, otherwise nothing would change
         presets.append((f"{label} ({k} K)", "Set colour temperature" + mark,
@@ -83,10 +99,9 @@ def entries():
 
 
 def default_count():
-    """How many entries to show without a filter: toggle + one more, and the warmth presets
-    only while Night Light is on (they change nothing visible while it is off)."""
-    enabled, _, _ = state()
-    return 2 + (len(PRESETS) if enabled else 0)
+    """Entries shown without a filter: toggle + one more, plus the warmth presets when the
+    screen is really warm (they change nothing visible otherwise, so they are not offered)."""
+    return 2 + (len(PRESETS) if active() else 0)
 
 
 def search(query):
