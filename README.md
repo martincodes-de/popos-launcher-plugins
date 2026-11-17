@@ -10,8 +10,11 @@ Small [pop-launcher](https://github.com/pop-os/launcher) plugins for Pop!_OS (Su
 ## Install
 
 ```sh
-./install.sh            # all plugins
-./install.sh proj       # just one
+./install.sh                # all plugins
+./install.sh proj           # just one
+./install.sh --list         # show available plugins
+./install.sh --uninstall    # remove again (all, or the named ones)
 ```
 
 Symlinks each plugin folder to `~/.local/share/pop-launcher/plugins/`. No sudo needed.
+The installer warns about missing dependencies (`pactl`, PhpStorm) and restarts the launcher.
