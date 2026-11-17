@@ -112,6 +112,20 @@ def active():
         return get("night-light-enabled") == "true"
 
 
+def sunrise():
+    """Next sunrise as float hours from the settings daemon, or None if GNOME has no location
+    (it then reports -1)."""
+    try:
+        out = subprocess.run(
+            ["gdbus", "call", *COLOR_DBUS, "--method", "org.freedesktop.DBus.Properties.Get",
+             "org.gnome.SettingsDaemon.Color", "Sunrise"],
+            capture_output=True, text=True, check=True).stdout
+        value = float(out.split("<")[1].split(">")[0])
+        return round(value, 2) if value >= 0 else None
+    except Exception:
+        return None
+
+
 def hhmm(hours):
     """GNOME stores times as float hours: 6.5 -> '6:30'."""
     h = int(hours); m = round((hours - h) * 60)
@@ -136,10 +150,15 @@ def entries():
     # A start later than the end is read by GNOME as "overnight".
     now = time.localtime()
     start = max(0.0, round(now.tm_hour + now.tm_min / 60 - 1 / 60, 2))
-    end = float(get("night-light-schedule-to"))
-    return [("Warm on", f"Warm now until {hhmm(end)}, then back to sunset schedule",
+    # End at the real sunrise. Without a location fall back to the stored end time (6:00).
+    # The manual schedule itself ends at "schedule-to", so that must be set too, not only the
+    # restore timer: otherwise the screen would turn normal at the old end time.
+    end = sunrise()
+    if end is None:
+        end = float(get("night-light-schedule-to"))
+    return [("Warm on", f"Warm now until sunrise ({hhmm(end)}), then back to sunset schedule",
              [("night-light-schedule-automatic", False), ("night-light-schedule-from", start),
-              ("night-light-enabled", True), ("restore", end)])]
+              ("night-light-schedule-to", end), ("night-light-enabled", True), ("restore", end)])]
 
 
 def search(query):

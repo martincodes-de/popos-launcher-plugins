@@ -7,8 +7,8 @@ The default is GNOME's **sunset-to-sunrise schedule**. This plugin only adds a t
 
 Press **Super**, type `night`, hit **Enter**:
 
-- **Warm on** (shown while the screen is normal): warm right now until the configured end time
-  (default 6:00). A one-shot systemd timer then restores the sunset schedule.
+- **Warm on** (shown while the screen is normal): warm right now until the next sunrise (from GNOME's
+  location, fallback 6:00). A one-shot systemd timer then restores the sunset schedule.
 - **Warm off** (shown while the screen is warm): back to normal colours and the sunset schedule.
   If it is night, it only skips tonight (GNOME's "disabled until tomorrow").
 - **Low / Medium / High** (shown while the screen is warm): warmth 3200 / 2700 / 2200 K.
