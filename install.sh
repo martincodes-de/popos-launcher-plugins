@@ -39,6 +39,7 @@ check_deps() {
   for p in "${plugins[@]}"; do
     case "$p" in
       audio-switch) command -v pactl >/dev/null || { echo "warning: audio-switch needs pactl" >&2; missing=1; } ;;
+      display-fix) command -v xrandr >/dev/null || { echo "warning: display-fix needs xrandr" >&2; missing=1; } ;;
       proj) command -v phpstorm >/dev/null || [ -x /snap/bin/phpstorm ] || { echo "warning: proj needs PhpStorm" >&2; missing=1; } ;;
     esac
   done

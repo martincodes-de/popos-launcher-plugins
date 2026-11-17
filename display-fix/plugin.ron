@@ -1,0 +1,12 @@
+(
+    name: "Display Fix",
+    description: "Activate connected but inactive monitors\nSyntax: display, monitor",
+    bin: (path: "display-fix.py"),
+    icon: Name("video-display"),
+    query: (
+        regex: "^(display|monitor|screen)\\b.*",
+        help: "display ",
+        priority: High,
+    ),
+    history: false,
+)
