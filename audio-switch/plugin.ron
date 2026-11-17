@@ -1,0 +1,13 @@
+(
+    name: "Audio Output Switch",
+    description: "Switch the default audio output\nSyntax: audio <filter> | mic <filter>",
+    bin: (path: "audio-switch.py"),
+    icon: Name("audio-speakers"),
+    query: (
+        // Wake for "audio|sound|out ..." (output) and "mic|input ..." (microphone)
+        regex: "^(audio|sound|out|mic|input)\\b.*",
+        help: "audio ",
+        priority: High,
+    ),
+    history: false,
+)
